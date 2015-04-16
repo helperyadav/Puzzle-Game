@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Game</title>
+        <style>/* Removes Mobile Highlight */ *{-webkit-tap-highlight-color: rgba(0, 0, 0, 0);}</style>
+        <script src="https://code.createjs.com/createjs-2014.12.12.min.js"></script>
+    
+	<style>
+		#Stage {
+			  margin-left: auto;
+			  margin-right: auto;
+			  display: block;
+			  background-color:black;
+		}
+	</style>
+	</head>
+    <body onload="init()">
+        <canvas id="Stage" width="400" height="550" style="border:1px solid black;"></canvas>
+		
+    <script>
+		var tkr = {};
+		var stage;
+		var splashScreen, gameScreen, poptions;
+		var canvasSize = {w:400, h:550};
+		var preload, puzzleQueue;
+		var degug = true;
+		var game = {
+			score: 0,
+			currentQ: -1,
+			puzzles:[
+   					    {id: "myImage1", src:"img/puzzles/bmw.png", op1: 'BMW', op2: 'AUDI', op3:'TOYOTA', op4:'TATA', ans:'op1' },
+			     		{id: "myImage2", src:"img/puzzles/audi.png", op1: 'BMW', op2: 'nividia', op3:'TOYOTA', op4:'Audi', ans:'op4'},
+			     		{id: "myImage3", src:"img/puzzles/mercedes.png", op1: 'BMW', op2: 'AUDI', op3:'Mercedes', op4:'TATA', ans:'op3'},
+						{id: "myImage4", src:"img/puzzles/Jaguar.png", op1: 'Jaguar', op2: 'AUDI', op3:'Mercedes', op4:'TATA', ans:'op1'},
+			     		{id: "Renault", src:"img/puzzles/Renault.png", op1: 'Renault', op2: 'AUDI', op3:'Mercedes', op4:'TATA', ans:'op1'},
+						{id: "farrari", src:"img/puzzles/farrari1.png", op1: 'Renault', op2: 'AUDI', op3:'Mercedes', op4:'farrari', ans:'op4'},
+						{id: "AUDI", src:"img/puzzles/AUDI.JPG", op1: 'Renault', op2: 'AUDI', op3:'Mercedes', op4:'farrari', ans:'op4'}
+					],
+			resources: [
+						{id: "startbtn", src:"img/start1.png"},
+			     		{id:'Road', src:"img/Road.jpg"},
+			     		{id: 'menuBar', src: "img/MenuBar.jpg"},
+			     		{id: 'car', src: "img/car1.png"},
+			     		{id: 'Opbutton', src: "img/optoinBtn.png"},
+			     		{id: 'tire', src: "img/tire.png"},
+			    		{id: 'topgreen', src: "img/TopGreen.jpg"},
+						{id: 'ansClick', src: "sound/ansClick.wav"},
+						{id: 'bgSound', src: "sound/bgSound.mp3"},
+						
+						{id: 'bgimg', src: "img/BG.jpg"},
+						{id: 'pbox', src: "img/fabric_3.jpg"}
+						
+					]
+		}
+
+		function init() {
+			stage = new createjs.Stage('Stage');
+			stage.enableMouseOver();
+			
+			//screen shown on game load.
+			splashScreen = new createjs.Container();
+			gameScreen = new createjs.Container();
+			stage.addChild(splashScreen);
+			
+			var text = new createjs.Text("Loading...", "20px Arial", "#00ff00");
+			text.x = Math.round( (canvasSize.w / 2 )- (text.getBounds().width/2) );
+			text.y = 10 + text.getBounds().height;
+			text.textBaseline = "alphabetic";
+			splashScreen.addChild(text);
+
+			preload = new createjs.LoadQueue();
+			preload.installPlugin(createjs.Sound);
+			preload.loadManifest(game.resources);
+			preload.addEventListener("fileload", function(event){
+				handleFileloadEvent(event);
+			});
+			
+			preload.addEventListener("complete", function(){
+				console.log('all loaded');
+				//start loading puzzles.
+				puzzleQueue =  new createjs.LoadQueue();
+				puzzleQueue.loadManifest(game.puzzles);
+				puzzleQueue.addEventListener("fileload", function(event){
+					handleFileloadEvent(event);
+				});
+				puzzleQueue.addEventListener("complete", function(){
+					handleAllFileComplete();
+				});
+			});
+			createjs.Ticker.addEventListener("tick", gameLoop)
+		}
+		
+		function handleFileloadEvent(event){
+			if (typeof text != 'undefined'){
+				splashScreen.removeChild( text );
+			}
+			
+			text = new createjs.Text("Loaded " + event.item.id + " " + event.item.type, "10px Arial", "#00ff00");
+			text.x = Math.round( (canvasSize.w / 2 ) - (text.getBounds().width/2) );
+			text.y = 40 + text.getBounds().height;
+			text.textBaseline = "alphabetic";
+			splashScreen.addChild(text);
+			console.log( event.item.src );
+		}
+		
+		function handleAllFileComplete(){
+			console.log('All resource loaded.');
+
+			var startbtn = preload.getResult('startbtn');
+			startbtn.cursor = 'pointer';
+			var btn = new createjs.Bitmap(startbtn);
+			btn.scaleX = btn.scaleY = 0.5;
+			btn.x = (canvasSize.w/2) - (btn.getBounds().width/4);
+			btn.y = (canvasSize.h/2) - (btn.getBounds().height/4);
+			btn.addEventListener("mouseover", function(event){
+				event.target.cursor = 'pointer'; 
+			});
+
+			btn.addEventListener("mouseout", function(event){
+				event.target.cursor = ''; 
+			});
+			
+			btn.addEventListener('click', function(){
+				stage.removeChild(btn);
+				StartGame();
+			});
+			
+			var bg = new createjs.Bitmap(preload.getResult('bgimg'));
+			//bg.scaleX = canvasSize.w/bg.getBounds().width;
+			//bg.scaleY = canvasSize.h/bg.getBounds().height;
+			bg.x = 0; bg.y = 0;
+			stage.removeChild(splashScreen);
+			stage.addChild(bg, btn);
+		}
+	
+		function gameLoop(){
+			stage.update();
+		}
+
+		function StartGame(){
+			createjs.Sound.play("bgSound", 'none',0, 0, 1);
+			var strScore = "Score: " + game.score ;
+			var score = new createjs.Text(strScore, "20px Arial", "#00ff00");
+			score.x = Math.round( (canvasSize.w ) - (score.getBounds().width) ) - 30;
+			score.y = 10 + score.getBounds().height;
+			score.textBaseline = "alphabetic";
+			score.name = 'score';
+			
+			gameScreen.addChild(score/*, Road, tire*/);
+			stage.addChild( gameScreen );
+			console.log('Game staring...');
+			LoadNext();
+		}
+
+		function LoadNext(){
+			var p = ++game.currentQ;
+			var puzzle = game.puzzles[p];
+			
+			pContainer = new createjs.Container();
+			poptions = new createjs.Container();
+			pContainer.name = 'pbox';
+		
+			var pBGimg = new createjs.Bitmap(preload.getResult('bgimg'));
+			var pimg = new createjs.Bitmap(puzzleQueue.getResult(puzzle.id));
+			pimg.regX = pimg.getBounds().width/2;
+			
+			pContainer.addChild(/*pBGimg,*/ pimg);
+			
+			pimg.x = pContainer.getBounds().width/2;
+			
+			pContainer.regX = (pContainer.getBounds().width/2);
+			pContainer.regY = (pContainer.getBounds().height/2);
+			pContainer.x = Math.round((canvasSize.w /2));
+			pContainer.y = (canvasSize.h / 3) ;
+			gameScreen.addChild(pContainer);
+			
+			var opbtn1 = getOPbutton('op1' , puzzle.op1);
+			opbtn1.x = 10;
+			opbtn1.y = canvasSize.h - opbtn1.getBounds().height - 10;
+
+			var opbtn2 = getOPbutton('op2' , puzzle.op2);
+			opbtn2.x = 10;
+			opbtn2.y = canvasSize.h - (opbtn2.getBounds().height  + 10) * 2;
+
+			var opbtn3 = getOPbutton('op3' ,puzzle.op3);
+			opbtn3.x = 10;
+			opbtn3.y = canvasSize.h - (opbtn3.getBounds().height  + 10) * 3;
+
+			var opbtn4 = getOPbutton('op4' ,puzzle.op4);
+			opbtn4.x = 10;
+			opbtn4.y = canvasSize.h - (opbtn4.getBounds().height  + 10) * 4;
+
+			poptions.addChild(opbtn1,opbtn2, opbtn3, opbtn4);
+			gameScreen.addChild(poptions);
+				
+			//drawGrid();
+		}
+
+		function getOPbutton(id, label){
+			var opContainer = new createjs.Container();
+			var opbutton = new createjs.Bitmap(preload.getResult('Opbutton'));
+			//opbutton.scaleX = canvasSize.w / opbutton.getBounds().width;
+			
+			var btnLabel = new createjs.Text(label, "20px Arial", "#003200");
+			
+			btnLabel.x = 60; btnLabel.outline = 2;
+			btnLabel.y = 10;
+			
+			opContainer.name = id;
+			opContainer.id = id;
+			opContainer.addChild(opbutton, btnLabel);
+			opContainer.addEventListener("click", function(evt){
+				console.log("clicked" + evt);
+				createjs.Sound.play("ansClick");
+				var resource = game.puzzles;
+				var Q = resource[game.currentQ];
+				if( Q.ans == evt.currentTarget.id ){
+					console.log('load next');
+					if (typeof pContainer != 'undefined'){
+						var oldC = pContainer;
+						createjs.Tween.get(oldC).to({scaleX:0},500,createjs.Ease.linear).call(function(t){
+							gameScreen.removeChild( oldC );
+							LoadNext();
+						});
+						
+					}
+					
+					updateScore(100);
+					if (typeof poptions != 'undefined'){
+						poptions.removeAllChildren();
+					}
+				}
+			});
+
+			opContainer.addEventListener("mouseover", function(event){
+				event.target.cursor = 'pointer'; 
+			});
+
+			opContainer.addEventListener("mouseout", function(event){
+				event.target.cursor = ''; 
+			});
+
+			return opContainer;
+		}
+		
+		function updateScore( Inc ){
+			createjs.Tween.get(game).to({score : game.score + Inc }, 1000).addEventListener("change", function(){
+				var score = gameScreen.getChildByName('score');
+				gameScreen.removeChild( score );
+				var strScore = "Score: " + Math.round(game.score) ;
+				score = new createjs.Text(strScore, "20px Arial", "#00ff00");
+				score.x = Math.round( (canvasSize.w ) - (score.getBounds().width) ) - 30;
+				score.y = 10 + score.getBounds().height;
+				score.textBaseline = "alphabetic";
+				score.name = 'score';
+				gameScreen.addChild( score );
+			});
+		}
+
+		function drawGrid(){
+			if(degug==true){
+				var line = new createjs.Shape();
+				for(var i = 0; i < canvasSize.w; i+=10){
+					line.graphics
+						.setStrokeStyle(0.4,"round")
+						.beginStroke("#AA0000")
+						.moveTo(i,0)
+						.lineTo(i, canvasSize.h);
+					
+					line.graphics
+						.setStrokeStyle(0.4,"round")
+						.beginStroke("#AA0000")
+						.moveTo(0, i)
+						.lineTo(canvasSize.w, i);
+				}
+				
+				
+				//line.graphics.beginStroke("DeepSkyBlue").moveTo(20,20).lineTo(40, 40);
+				stage.addChild(line);
+			}
+		}
+	</script>
+	</body>
+	
+</html>

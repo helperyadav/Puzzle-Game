@@ -1,0 +1,36 @@
+.menuWrap{
+  background-color: #333;
+  display:block;
+  min-height: 50px;
+}
+
+.mainWrap{
+  background-color:#333;
+  min-height:550px;
+}
+.imgWrap{
+  margin: 3px;
+  background-color: #333;
+  min-height:200px;
+  width:50%;
+  display: inline-block;
+}
+
+.optionWrap{
+  margin: 3px;
+  background-color: #333;
+  min-height:500px;
+  width: 45%;
+  display: inline-block;
+  float: right;
+}
+
+.puzzleimg{
+  width: 70%;
+  margin:5px;
+}
+
+.option{
+  margin: 5px;
+  padding: 5px;
+}
